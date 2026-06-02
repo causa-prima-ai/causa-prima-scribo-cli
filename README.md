@@ -83,6 +83,74 @@ scribo <command>
 
 **Verify:** `scribo jurisdictions` (add `--json` for machine-readable output) prints the supported-jurisdictions matrix.
 
+## Usage
+
+### How it works
+
+Every command talks to the public Scribo API and follows BSD sysexits exit codes, so scripts can branch on `$?` without parsing output.
+
+| Command | What it does |
+|---|---|
+| `scribo create` | Generate an invoice and save it locally (`-o file`). Build from flags, or pass a full `CreateInvoiceInput` with `--from invoice.json`. |
+| `scribo get <invoiceId>` | Print invoice metadata as JSON (includes a fresh signed `download_url`). |
+| `scribo download <invoiceId> [-o file]` | Stream the invoice bytes to a file. |
+| `scribo jurisdictions` | Print the supported-jurisdictions matrix (`--json` for machine output). |
+
+**Line items** repeat `--line` per row:
+
+```
+--line "<description>,<quantity>,<unit_price>,<tax_rate>[,<unit_code>[,<tax_category_code>[,<tax_exemption_code>]]]"
+```
+
+`unit_code` defaults to `EA`, `tax_category_code` to `S` (standard-rated). Escape commas in the description with a backslash. The 7th field, `tax_exemption_code`, is required when `tax_category_code=E` — pass a `VATEX-*` code matching the legal basis (see [tax codes](https://scribo.causaprima.ai/docs/tax-codes)).
+
+**Exit codes** (BSD sysexits): `0` success · `64` bad usage · `65` 4xx · `66` not found · `70` 5xx · `75` rate-limited / temporarily blocked (retry) · `1` network/other.
+
+Full flag reference: [scribo.causaprima.ai/docs/cli](https://scribo.causaprima.ai/docs/cli).
+
+### Examples
+
+**Kleinunternehmer (§ 19 UStG, VAT-exempt)**
+
+```sh
+scribo create \
+  --sender-name "Friedrich Beratung" --sender-country DE \
+  --sender-address "Musterstr. 1" --sender-postcode 10115 --sender-city Berlin \
+  --sender-email f@example.de \
+  --recipient-name "Acme GmbH" --recipient-country DE \
+  --recipient-address "Hauptstr. 1" --recipient-postcode 10117 --recipient-city Berlin \
+  --recipient-email ap@acme.de \
+  --currency EUR \
+  --line "Beratung,5,80.00,0,HUR,E,VATEX-EU-79-C"
+```
+
+**German B2G XRechnung (Leitweg-ID + IBAN)**
+
+```sh
+scribo create \
+  --sender-name "Acme GmbH" --sender-country DE \
+  --sender-address "Musterstr. 1" --sender-postcode 10115 --sender-city Berlin \
+  --sender-tax-id DE123456788 --sender-email billing@acme.de \
+  --sender-contact-name "Erika Beispiel" --sender-contact-phone "+49 30 1234567" \
+  --recipient-name "Bundesamt für Beispiele" --recipient-country DE \
+  --recipient-address "Wilhelmstr. 1" --recipient-postcode 10117 --recipient-city Berlin \
+  --recipient-email rechnung@bund.de \
+  --recipient-leitweg-id "991-12345-67" \
+  --currency EUR \
+  --payment-iban DE89370400440532013000 --payment-account-name "Acme GmbH" \
+  --line "Consulting,3,1200.00,19,DAY,S"
+```
+
+**CI usage — branch on exit code**
+
+```sh
+scribo create --from invoice.json -o out.pdf || case $? in
+  75) echo "rate limited; backing off"; exit 75 ;;
+  70) echo "server error; retry later"; exit 1 ;;
+  *)  exit 1 ;;
+esac
+```
+
 ## Compliance
 
 Scribo emits invoices conforming to **EN 16931**, the European e-invoicing standard, with the relevant national CIUS. Every invoice is validated against the **Invopop**-hosted EN 16931 validator at generate-time — output that fails the rule set never reaches the user.
