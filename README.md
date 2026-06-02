@@ -23,7 +23,14 @@ Just ask your AI agent about Scribo: it ships as an MCP server, a CLI, and a Cla
 
 ## What is the Scribo CLI?
 
-> 🚧 **Status: planned.** The Scribo CLI hasn't shipped yet — star or watch this repo to be notified. Getting started and Usage sections land when the CLI ships. In the meantime, see **[Previous README](#previous-readme)** below for the surface map, or reach for the [skill](https://github.com/causa-prima-ai/causa-prima-scribo-skill), [MCP server](https://github.com/causa-prima-ai/causa-prima-scribo-mcp), or [HTTP API](https://github.com/causa-prima-ai/causa-prima-scribo-api-docs) today.
+The Scribo CLI brings compliant invoicing to your terminal. Install it from npm, run `scribo create …`, and get a finished invoice — a PDF with the matching e-invoice XML — written straight to a file. It wraps the public Scribo API with [sysexits](https://man.freebsd.org/cgi/man.cgi?sysexits)-style exit codes, so it drops cleanly into shell scripts and CI pipelines.
+
+Free, no signup — your sender email is the login. Run it globally or one-off via `npx`.
+
+### Demo
+
+<!-- TODO: add demo video here -->
+_🎥 Demo video coming soon._
 
 ## Compliance
 
