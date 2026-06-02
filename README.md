@@ -18,7 +18,6 @@
 - [FAQ](#faq)
 - [Resources](#resources)
 - [License](#license)
-- [Previous README](#previous-readme)
 
 ## What is Scribo?
 
@@ -53,6 +52,7 @@ npx @causaprima/scribo-cli create \
   --sender-tax-id DE123456788 --sender-email billing@example.com \
   --recipient-name "Acme GmbH" --recipient-country DE \
   --recipient-address "Hauptstrasse 1" --recipient-postcode 10117 --recipient-city Berlin \
+  --recipient-email ap@acme.example \
   --line "Senior consulting,3,1200,19,DAY,S" \
   --due-date 2026-06-01 \
   -o invoice.pdf
@@ -61,16 +61,20 @@ npx @causaprima/scribo-cli create \
 Output:
 
 ```
-Generated zugferd_comfort  invoice_id=f0b3c1e2-...
-Saved to invoice.pdf
-Magic link emailed to billing@example.com
+Invoice created
+  invoice_id:  f0b3c1e2-...
+  format:      zugferd_comfort
+  download:    https://scribo.causaprima.ai/i/f0b3c1e2-.../download
+  expires:     2099-12-31T23:59:59Z
+  validator:   ok (invopop)
+  saved to:    invoice.pdf
 ```
 
-The first invoice from a new sender email triggers a magic link so you can sign back in and re-download.
+On the first invoice for a sender email the CLI prompts for the 6-digit verification code Scribo emails you (use `--no-prompt` in CI — it prints the challenge and exits `75`). The same email carries a magic link for signing back in and re-downloading.
 
 ### Setup & prerequisites
 
-**Prerequisites:** Node.js 24 LTS or later.
+**Prerequisites:** Node.js 20 or later.
 
 **Install** globally for repeated use:
 
@@ -85,7 +89,7 @@ scribo <command>
 
 | Env var | Purpose | Default |
 |---|---|---|
-| `SCRIBO_API_BASE_URL` | Public API origin | `https://scribo.causaprima.ai` |
+| `SCRIBO_API_BASE_URL` | Public API origin (`SCRIBO_BASE_URL` accepted as fallback) | `https://scribo.causaprima.ai` |
 | `SCRIBO_API_KEY` | Optional bearer token (partner quotas) | _(unset)_ |
 
 **Verify:** `scribo jurisdictions` (add `--json` for machine-readable output) prints the supported-jurisdictions matrix.
@@ -111,7 +115,9 @@ Every command talks to the public Scribo API and follows BSD sysexits exit codes
 
 `unit_code` defaults to `EA`, `tax_category_code` to `S` (standard-rated). Escape commas in the description with a backslash. The 7th field, `tax_exemption_code`, is required when `tax_category_code=E` — pass a `VATEX-*` code matching the legal basis (see [tax codes](https://scribo.causaprima.ai/docs/tax-codes)).
 
-**Exit codes** (BSD sysexits): `0` success · `64` bad usage · `65` 4xx · `66` not found · `70` 5xx · `75` rate-limited / temporarily blocked (retry) · `1` network/other.
+**Payment details** — SEPA: `--payment-iban` (+ optional `--payment-bic`); US: `--payment-account-number` + `--payment-routing-number` (+ optional `--payment-bank`), instead of an IBAN — not both. XRechnung (German B2G) requires the IBAN (BR-DE-1).
+
+**Exit codes** (BSD sysexits): `0` success · `64` bad usage · `65` 4xx (incl. an empty or rejected verification code) · `66` not found · `70` 5xx · `75` rate-limited / temporarily blocked / `--no-prompt` verification pending (retry) · `1` network/other.
 
 Full flag reference: [scribo.causaprima.ai/docs/cli](https://scribo.causaprima.ai/docs/cli).
 
@@ -160,7 +166,7 @@ esac
 
 ## Compliance
 
-Scribo emits invoices conforming to **EN 16931**, the European e-invoicing standard, with the relevant national CIUS. Every invoice is validated against the **Invopop**-hosted EN 16931 validator at generate-time — output that fails the rule set never reaches the user.
+Scribo emits invoices conforming to **EN 16931**, the European e-invoicing standard, with the relevant national CIUS. Every EN 16931 output (ZUGFeRD, XRechnung) is validated against the **Invopop**-hosted validator at generate-time — output that fails the rule set never reaches the user. US plain PDFs carry no EN 16931 XML and are rendered directly.
 
 **Supported formats**
 
@@ -171,7 +177,7 @@ Scribo emits invoices conforming to **EN 16931**, the European e-invoicing stand
 | United States | Plain PDF (no XML, no e-invoice claim) | ✅ Live |
 | France | **Factur-X** EN 16931 | 🔜 Coming soon |
 | Spain | **Facturae** | 🔜 Coming soon |
-| Belgium | **Peppol BIS 3.0** UBL | 🔜 Coming soon |
+| Belgium / NL / LU / AT | **Peppol BIS 3.0** UBL | 🔜 Coming soon |
 
 *Disclaimer: Scribo generates and validates compliant invoice documents. It is **not tax or legal advice** — Scribo does not determine your tax obligations, VAT treatment, or filing requirements.*
 
@@ -187,21 +193,21 @@ Yes — free forever. No credit card, no subscription, no paywall before your fi
 <details>
 <summary><strong>Do I need an account or signup?</strong></summary>
 
-No signup form. Scribo uses a magic-link login: you provide a sender email (which the invoice needs anyway), confirm via a one-time link, and you're in.
+No signup form. On your first invoice, Scribo verifies the sender email — a 6-digit code (or one-click link) arrives at that address; one verification covers ~30 minutes of invoicing. The same email doubles as your magic-link login for re-downloads later.
 
 </details>
 
 <details>
 <summary><strong>Which countries and formats are supported?</strong></summary>
 
-Live today: **Germany** — ZUGFeRD (B2B) and XRechnung (B2G) — and the **United States** (plain PDF). Coming next: **France** (Factur-X), **Spain** (Facturae), and **Belgium** (Peppol BIS 3.0).
+Live today: **Germany** — ZUGFeRD (B2B) and XRechnung (B2G) — and the **United States** (plain PDF). Coming next: **France** (Factur-X), **Spain** (Facturae), and **Belgium / NL / LU / AT** (Peppol BIS 3.0).
 
 </details>
 
 <details>
 <summary><strong>What does "EN 16931-compliant" actually mean here?</strong></summary>
 
-Every invoice is validated against the **EN 16931-1:2017** rule set (via the Invopop-hosted validator) before it's returned. Output that fails validation never reaches you.
+Every EN 16931 output (ZUGFeRD, XRechnung) is validated against the **EN 16931-1:2017** rule set (via the Invopop-hosted validator) before it's returned. Output that fails validation never reaches you. US plain PDFs carry no EN 16931 XML, so no schematron validation applies.
 
 </details>
 
@@ -242,41 +248,13 @@ Scribo is built to be operated by an agent. It ships as an **MCP server**, a **C
 
 **Other Scribo surfaces**
 
-- Skill (Claude / Codex) — [`causa-prima-scribo-skill`](https://github.com/causa-prima-ai/causa-prima-scribo-skill) · [docs](https://scribo.causaprima.ai/docs/skill)
-- MCP server — [`causa-prima-scribo-mcp`](https://github.com/causa-prima-ai/causa-prima-scribo-mcp) · [docs](https://scribo.causaprima.ai/docs/mcp)
-- CLI — [`causa-prima-scribo-cli`](https://github.com/causa-prima-ai/causa-prima-scribo-cli) · [docs](https://scribo.causaprima.ai/docs/cli)
-- HTTP API — [`causa-prima-scribo-api-docs`](https://github.com/causa-prima-ai/causa-prima-scribo-api-docs) · [docs](https://scribo.causaprima.ai/docs/api)
-- Brand hub — [`causa-prima-scribo`](https://github.com/causa-prima-ai/causa-prima-scribo)
+- Skill (Claude / Codex) — [`scribo-skill`](https://github.com/causa-prima-ai/scribo-skill) · [docs](https://scribo.causaprima.ai/docs/skill)
+- MCP server — [`scribo-mcp`](https://github.com/causa-prima-ai/scribo-mcp) · [docs](https://scribo.causaprima.ai/docs/mcp)
+- CLI — [`scribo-cli`](https://github.com/causa-prima-ai/scribo-cli) · [docs](https://scribo.causaprima.ai/docs/cli)
+- HTTP API — [`scribo-api-docs`](https://github.com/causa-prima-ai/scribo-api-docs) · [docs](https://scribo.causaprima.ai/docs/api)
+- Brand hub — [`scribo`](https://github.com/causa-prima-ai/scribo)
 
 ## License
 
 Proprietary — `UNLICENSED`. © Causa Prima Germany GmbH. All rights reserved. Distributed for use against the public Scribo API; not open-source. See [LICENSE](./LICENSE).
 
----
-
-## Previous README
-
-> **Note:** This repo's README is being migrated to Scribo's shared structure (consistent title, shared sections, and per-surface sections). The content below is the previous README, preserved verbatim — minus the header visual, which now sits at the top of this page.
-
-<details>
-<summary>Show previous README</summary>
-
-# Scribo CLI
-
-> 🚧 **Status: planned.** This repo is the placeholder for the official Scribo command-line interface. Star or watch this repo to be notified when it ships.
-
-For what Scribo is and the full surface map, see the [umbrella repo](https://github.com/causa-prima-ai/causa-prima-scribo).
-
-## Other ways to use Scribo today
-
-- **Claude Desktop / Cursor / Cline / ChatGPT App** → [`scribo-mcp`](https://github.com/causa-prima-ai/causa-prima-scribo-mcp)
-- **Claude Code / Codex CLI** → [`scribo-skill`](https://github.com/causa-prima-ai/causa-prima-scribo-skill)
-- **HTTP API directly** → [`scribo-api-docs`](https://github.com/causa-prima-ai/causa-prima-scribo-api-docs)
-- **Web app** → [scribo.causaprima.ai](https://scribo.causaprima.ai)
-- **Umbrella** → [`scribo`](https://github.com/causa-prima-ai/causa-prima-scribo)
-
-## License
-
-Proprietary — © Causa Prima Germany GmbH. All rights reserved. See [LICENSE](./LICENSE).
-
-</details>
