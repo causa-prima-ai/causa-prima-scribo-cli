@@ -1,3 +1,5 @@
+<img width="3840" height="1920" alt="A4 _ CLI" src="https://github.com/user-attachments/assets/d002deb4-f136-47cd-9c52-8144a962c879" />
+
 # Scribo CLI
 
 > 🚧 **Status: planned.** This repo is the placeholder for the official Scribo command-line interface. Star or watch this repo to be notified when it ships.
