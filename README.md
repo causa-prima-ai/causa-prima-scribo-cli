@@ -14,4 +14,4 @@ For what Scribo is and the full surface map, see the [umbrella repo](https://git
 
 ## License
 
-MIT.
+Proprietary — © Causa Prima Germany GmbH. All rights reserved. See [LICENSE](./LICENSE).
