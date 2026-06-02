@@ -32,6 +32,57 @@ Free, no signup — your sender email is the login. Run it globally or one-off v
 <!-- TODO: add demo video here -->
 _🎥 Demo video coming soon._
 
+## Getting started
+
+### Quickstart
+
+Run a one-off with `npx` (no install):
+
+```sh
+npx @causaprima/scribo-cli create \
+  --jurisdiction DE --currency EUR \
+  --sender-name "Example GmbH" --sender-country DE \
+  --sender-address "Example Allee 1" --sender-postcode 10115 --sender-city Berlin \
+  --sender-tax-id DE123456788 --sender-email billing@example.com \
+  --recipient-name "Acme GmbH" --recipient-country DE \
+  --recipient-address "Hauptstrasse 1" --recipient-postcode 10117 --recipient-city Berlin \
+  --line "Senior consulting,3,1200,19,DAY,S" \
+  --due-date 2026-06-01 \
+  -o invoice.pdf
+```
+
+Output:
+
+```
+Generated zugferd_comfort  invoice_id=f0b3c1e2-...
+Saved to invoice.pdf
+Magic link emailed to billing@example.com
+```
+
+The first invoice from a new sender email triggers a magic link so you can sign back in and re-download.
+
+### Setup & prerequisites
+
+**Prerequisites:** Node.js 24 LTS or later.
+
+**Install** globally for repeated use:
+
+```sh
+npm install -g @causaprima/scribo-cli
+scribo <command>
+```
+
+…or run any command one-off with `npx @causaprima/scribo-cli <command>`.
+
+**Configuration** — override defaults via env vars (or the `--base-url` / `--api-key` flags):
+
+| Env var | Purpose | Default |
+|---|---|---|
+| `SCRIBO_API_BASE_URL` | Public API origin | `https://scribo.causaprima.ai` |
+| `SCRIBO_API_KEY` | Optional bearer token (partner quotas) | _(unset)_ |
+
+**Verify:** `scribo jurisdictions` (add `--json` for machine-readable output) prints the supported-jurisdictions matrix.
+
 ## Compliance
 
 Scribo emits invoices conforming to **EN 16931**, the European e-invoicing standard, with the relevant national CIUS. Every invoice is validated against the **Invopop**-hosted EN 16931 validator at generate-time — output that fails the rule set never reaches the user.
