@@ -33,11 +33,6 @@ The Scribo CLI brings compliant invoicing to your terminal. Install it from npm,
 
 Free, no signup — your sender email is the login. Run it globally or one-off via `npx`.
 
-### Demo
-
-<!-- TODO: add demo video here -->
-_🎥 Demo video coming soon._
-
 ## Getting started
 
 ### Quickstart
